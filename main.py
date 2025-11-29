@@ -36,17 +36,30 @@ def main(page: ft.Page):
         def cancel_logout(e_cancel):
             page.close(dialog)
 
-        current_theme = light_theme if page.theme_mode == ft.ThemeMode.LIGHT else dark_theme
+        is_light = page.theme_mode == ft.ThemeMode.LIGHT
+        current_theme = light_theme if is_light else dark_theme
+        
+        # Determine colors for high contrast
+        confirm_text_color = ft.Colors.WHITE if is_light else ft.Colors.BLACK
         
         dialog = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Cerrar Sesión", style=current_theme.text_theme.title_large),
+            title=ft.Row([
+                ft.Icon(ft.Icons.WARNING_ROUNDED, color=current_theme.color_scheme.error),
+                ft.Text("Cerrar Sesión", style=current_theme.text_theme.title_large)
+            ], spacing=10, alignment=ft.MainAxisAlignment.START),
             content=ft.Text("¿Está seguro que desea cerrar la sesión?", style=current_theme.text_theme.body_medium),
             actions=[
-                ft.TextButton("Cancelar", on_click=cancel_logout),
-                ft.ElevatedButton("Cerrar Sesión", on_click=confirm_logout, bgcolor=current_theme.color_scheme.error)
+                ft.TextButton("Cancelar", on_click=cancel_logout, style=ft.ButtonStyle(color=current_theme.color_scheme.on_surface)),
+                ft.ElevatedButton(
+                    "Cerrar Sesión", 
+                    on_click=confirm_logout, 
+                    bgcolor=current_theme.color_scheme.error,
+                    color=confirm_text_color
+                )
             ],
             bgcolor=current_theme.color_scheme.surface,
+            shape=ft.RoundedRectangleBorder(radius=10),
         )
         page.open(dialog)
 
