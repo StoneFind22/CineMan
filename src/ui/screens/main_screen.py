@@ -38,7 +38,6 @@ class MainScreen:
                 ft.Row(
                     controls=[
                         self._build_sidebar(),
-                        ft.VerticalDivider(width=1, color=self.theme.color_scheme.outline),
                         self.content_area
                     ],
                     expand=True,
@@ -68,21 +67,37 @@ class MainScreen:
         return ft.Container(
             content=ft.Row(
                 controls=[
-                    ft.Text("POS CINEMA", style=self.theme.text_theme.headline_small, color=self.theme.color_scheme.on_primary),
+                    ft.Row([
+                        ft.Image(src="src/assets/logoweb.webp", height=40, fit=ft.ImageFit.CONTAIN),
+                        ft.Text("POS CINEMA", style=ft.TextStyle(size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE)),
+                    ], spacing=10),
                     ft.Container(expand=True),
                     user_info,
                     ft.Container(width=20),
                     ft.Row([
                         theme_button,
-                        ft.IconButton(icon=ft.Icons.LOCK_RESET, tooltip="Cambiar contraseña", on_click=self.show_change_password, icon_color=self.theme.color_scheme.on_primary),
-                        ft.IconButton(icon=ft.Icons.LOGOUT, tooltip="Cerrar sesión", on_click=self.show_logout_dialog, icon_color=self.theme.color_scheme.on_primary)
+                        ft.IconButton(icon=ft.Icons.LOCK_RESET, tooltip="Cambiar contraseña", on_click=self.show_change_password, icon_color=ft.Colors.WHITE),
+                        ft.IconButton(icon=ft.Icons.LOGOUT, tooltip="Cerrar sesión", on_click=self.show_logout_dialog, icon_color=ft.Colors.WHITE)
                     ])
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN
             ),
-            bgcolor=self.theme.color_scheme.primary,
-            padding=ft.padding.symmetric(horizontal=20, vertical=15),
-            height=70
+            gradient=ft.LinearGradient(
+                begin=ft.alignment.center_left,
+                end=ft.alignment.center_right,
+                colors=[
+                    self.theme.palette["primary"],
+                    self.theme.palette["primary_container"]
+                ]
+            ),
+            padding=ft.padding.symmetric(horizontal=20, vertical=10),
+            height=70,
+            shadow=ft.BoxShadow(
+                spread_radius=1,
+                blur_radius=10,
+                color=ft.Colors.with_opacity(0.2, ft.Colors.BLACK),
+                offset=ft.Offset(0, 2),
+            )
         )
 
     def _build_sidebar(self):
@@ -90,12 +105,13 @@ class MainScreen:
         return ft.Container(
             content=ft.Column(
                 [self._build_menu_item("dashboard", "Dashboard", ft.Icons.DASHBOARD, self._navigate_to_dashboard)],
-                spacing=5,
+                spacing=10,
                 scroll=ft.ScrollMode.AUTO
             ),
             width=250,
-            bgcolor=self.theme.palette["surface"],
-            padding=15
+            bgcolor=self.theme.color_scheme.surface,
+            padding=20,
+            border=ft.border.only(right=ft.BorderSide(1, self.theme.color_scheme.outline_variant))
         )
 
     def _build_menu_item(self, view_id: str, title: str, icon: str, on_click_action):
@@ -104,12 +120,19 @@ class MainScreen:
         
         return ft.Container(
             content=ft.Row(
-                [ft.Icon(icon, size=20), ft.Text(title, style=self.theme.text_theme.title_medium)],
+                [
+                    ft.Icon(icon, size=20, color=self.theme.color_scheme.primary if is_selected else self.theme.color_scheme.on_surface), 
+                    ft.Text(title, style=ft.TextStyle(
+                        size=14, 
+                        weight=ft.FontWeight.W_600 if is_selected else ft.FontWeight.NORMAL,
+                        color=self.theme.color_scheme.primary if is_selected else self.theme.color_scheme.on_surface
+                    ))
+                ],
                 spacing=15
             ),
             padding=ft.padding.symmetric(horizontal=15, vertical=12),
-            bgcolor=self.theme.color_scheme.primary_container if is_selected else ft.Colors.TRANSPARENT,
-            border_radius=8,
+            bgcolor=ft.Colors.with_opacity(0.1, self.theme.color_scheme.primary) if is_selected else ft.Colors.TRANSPARENT,
+            border_radius=10,
             ink=True,
             on_click=lambda e: on_click_action(view_id)
         )

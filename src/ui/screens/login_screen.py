@@ -17,41 +17,95 @@ class LoginScreen:
 
     def _create_controls(self):
         """Crea los controles de la pantalla de login usando el tema."""
-        self.title = ft.Text("POS CINEMA", style=self.theme.text_theme.headline_large, color=self.theme.color_scheme.primary)
-        self.subtitle = ft.Text("Sistema de Ventas", style=self.theme.text_theme.title_medium)
-        self.username_field = ft.TextField(label="Usuario", prefix_icon=ft.Icons.PERSON, width=300, autofocus=True, on_submit=self.on_login_click)
-        self.password_field = ft.TextField(label="Contraseña", prefix_icon=ft.Icons.LOCK, password=True, can_reveal_password=True, width=300, on_submit=self.on_login_click)
-        self.login_button = ft.ElevatedButton(text="Iniciar Sesión", width=300, height=45, on_click=self.on_login_click, style=ft.ButtonStyle(bgcolor=self.theme.color_scheme.primary, color=self.theme.color_scheme.on_primary))
-        self.exit_button = ft.TextButton("Salir", width=300, on_click=self.on_exit_click)
+        # Logo for the left side
+        self.logo = ft.Image(src="src/assets/logoweb.webp", width=400, fit=ft.ImageFit.CONTAIN)
+        
+        # Form elements for the right side
+        self.form_title = ft.Text("Bienvenido", style=self.theme.text_theme.headline_large, color=self.theme.color_scheme.primary)
+        self.subtitle = ft.Text("Ingresa tus credenciales para continuar", style=self.theme.text_theme.body_medium)
+        
+        self.username_field = ft.TextField(label="Usuario", prefix_icon=ft.Icons.PERSON, width=350, autofocus=True, on_submit=self.on_login_click)
+        self.password_field = ft.TextField(label="Contraseña", prefix_icon=ft.Icons.LOCK, password=True, can_reveal_password=True, width=350, on_submit=self.on_login_click)
+        
+        self.login_button = ft.ElevatedButton(
+            text="Iniciar Sesión", 
+            width=350, 
+            height=50, 
+            on_click=self.on_login_click, 
+            style=ft.ButtonStyle(
+                bgcolor=self.theme.color_scheme.primary, 
+                color=self.theme.color_scheme.on_primary,
+                shape=ft.RoundedRectangleBorder(radius=10)
+            )
+        )
+        self.exit_button = ft.TextButton("Salir del Sistema", width=350, on_click=self.on_exit_click)
         self.error_message = ft.Text("", color=self.theme.color_scheme.error, text_align=ft.TextAlign.CENTER, visible=False)
         self.progress = ft.ProgressRing(visible=False)
         self.theme_button = ft.IconButton(icon=ft.Icons.LIGHT_MODE if self.page.theme_mode == ft.ThemeMode.LIGHT else ft.Icons.DARK_MODE, tooltip="Alternar tema", on_click=self.toggle_theme)
 
     def build(self):
         """Construye y retorna el layout de la pantalla de login."""
-        login_form = ft.Column(controls=[self.title, self.subtitle, ft.Container(height=20), self.username_field, self.password_field, ft.Container(height=10), self.error_message, self.progress, ft.Container(height=10), self.login_button, self.exit_button], spacing=10, width=320, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-        footer = ft.Container(content=ft.Text(f"Versión {Config.APP_VERSION}", style=self.theme.text_theme.body_small, color=self.theme.color_scheme.outline), padding=10)
         
-        return ft.Stack(
+        # Left Side: Branding
+        left_side = ft.Container(
+            content=ft.Column(
+                controls=[
+                    self.logo,
+                    ft.Text("POS CINEMA", style=ft.TextStyle(size=40, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE)),
+                    ft.Text("Gestión Integral de Cines", style=ft.TextStyle(size=18, color=ft.Colors.WHITE70))
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=20
+            ),
+            expand=True,
+            gradient=ft.LinearGradient(
+                begin=ft.alignment.top_left,
+                end=ft.alignment.bottom_right,
+                colors=[
+                    self.theme.palette["primary"],
+                    self.theme.palette["primary_container"]
+                ]
+            )
+        )
+
+        # Right Side: Login Form
+        login_form = ft.Column(
             controls=[
-                ft.Container(
-                    gradient=ft.LinearGradient(
-                        begin=ft.alignment.top_center,
-                        end=ft.alignment.bottom_center,
-                        colors=[
-                            self.theme.palette["primary_container"],
-                            self.theme.palette["background"]
-                        ]
-                    ),
-                    expand=True
-                ),
-                ft.Column(
-                    controls=[ft.Container(expand=True), login_form, ft.Container(expand=True), footer],
-                    expand=True,
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER
-                ),
-                ft.Container(content=self.theme_button, top=10, right=10)
-            ]
+                self.form_title, 
+                self.subtitle, 
+                ft.Container(height=30), 
+                self.username_field, 
+                self.password_field, 
+                ft.Container(height=10), 
+                self.error_message, 
+                self.progress, 
+                ft.Container(height=20), 
+                self.login_button, 
+                self.exit_button
+            ],
+            spacing=10, 
+            width=400, 
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.CENTER
+        )
+
+        right_side = ft.Container(
+            content=ft.Stack(
+                controls=[
+                    ft.Container(content=login_form, alignment=ft.alignment.center),
+                    ft.Container(content=self.theme_button, top=20, right=20),
+                    ft.Container(content=ft.Text(f"v{Config.APP_VERSION}", color=self.theme.color_scheme.outline), bottom=20, right=20)
+                ]
+            ),
+            expand=True,
+            bgcolor=self.theme.color_scheme.surface
+        )
+
+        return ft.Row(
+            controls=[left_side, right_side],
+            spacing=0,
+            expand=True
         )
     
     def on_login_click(self, e):
