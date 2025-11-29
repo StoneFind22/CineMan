@@ -30,16 +30,15 @@ def main(page: ft.Page):
     def open_logout_dialog(e):
         def confirm_logout(e_confirm):
             current_session.logout()
-            page.dialog.open = False
+            page.close(dialog)
             router.navigate("/login")
         
         def cancel_logout(e_cancel):
-            page.dialog.open = False
-            page.update()
+            page.close(dialog)
 
         current_theme = light_theme if page.theme_mode == ft.ThemeMode.LIGHT else dark_theme
         
-        page.dialog = ft.AlertDialog(
+        dialog = ft.AlertDialog(
             modal=True,
             title=ft.Text("Cerrar Sesión", style=current_theme.text_theme.title_large),
             content=ft.Text("¿Está seguro que desea cerrar la sesión?", style=current_theme.text_theme.body_medium),
@@ -49,8 +48,7 @@ def main(page: ft.Page):
             ],
             bgcolor=current_theme.color_scheme.surface,
         )
-        page.dialog.open = True
-        page.update()
+        page.open(dialog)
 
     user_manager = UserManager(db)
     router = Router(page, user_manager, animated_switcher, open_logout_dialog)
