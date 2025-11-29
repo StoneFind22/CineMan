@@ -1,12 +1,12 @@
 import flet as ft
 from datetime import datetime
-from src.config.settings import Config
 from src.utils.security import current_session
 from src.ui.views.dashboard_view import DashboardView
 from src.ui.components.dialogs import ChangePasswordDialog
 from src.services.user_service import UserManager
 from src.database.connection import db
 from src.ui.theme import AppTheme
+from src.ui.components.sidebar import Sidebar
 
 class MainScreen:
     """
@@ -22,6 +22,8 @@ class MainScreen:
         self.open_logout_dialog_callback = open_logout_dialog_callback
         self.current_view = "dashboard"
         self.content_area = ft.Container(expand=True)
+        self.sidebar_expanded = True
+        self.sidebar = Sidebar(self, self.theme, self.sidebar_expanded)
 
     def show(self):
         """Construye y muestra la UI de la pantalla principal en la página."""
@@ -37,11 +39,12 @@ class MainScreen:
                 self._build_app_bar(),
                 ft.Row(
                     controls=[
-                        self._build_sidebar(),
+                        self.sidebar,
                         self.content_area
                     ],
                     expand=True,
-                    spacing=0
+                    spacing=0,
+                    vertical_alignment=ft.CrossAxisAlignment.START
                 )
             ],
             spacing=0
@@ -68,6 +71,12 @@ class MainScreen:
             content=ft.Row(
                 controls=[
                     ft.Row([
+                        ft.IconButton(
+                            icon=ft.Icons.MENU,
+                            tooltip="Toggle Sidebar",
+                            on_click=self._toggle_sidebar,
+                            icon_color=self.theme.color_scheme.on_primary
+                        ),
                         ft.Image(src="src/assets/logoweb.webp", height=40, fit=ft.ImageFit.CONTAIN),
                         ft.Text("POS CINEMA", style=ft.TextStyle(size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE)),
                     ], spacing=10),
@@ -100,58 +109,21 @@ class MainScreen:
             )
         )
 
-    def _build_sidebar(self):
-        """Construye y retorna el menú lateral."""
-        return ft.Container(
-            content=ft.Column(
-                [self._build_menu_item("dashboard", "Dashboard", ft.Icons.DASHBOARD, self._navigate_to_dashboard)],
-                spacing=10,
-                scroll=ft.ScrollMode.AUTO
-            ),
-            width=250,
-            bgcolor=self.theme.color_scheme.surface,
-            padding=20,
-            border=ft.border.only(right=ft.BorderSide(1, self.theme.color_scheme.outline_variant))
-        )
-
-    def _build_menu_item(self, view_id: str, title: str, icon: str, on_click_action):
-        """Construye un elemento del menú."""
-        is_selected = self.current_view == view_id
-        
-        return ft.Container(
-            content=ft.Row(
-                [
-                    ft.Icon(icon, size=20, color=self.theme.color_scheme.primary if is_selected else self.theme.color_scheme.on_surface), 
-                    ft.Text(title, style=ft.TextStyle(
-                        size=14, 
-                        weight=ft.FontWeight.W_600 if is_selected else ft.FontWeight.NORMAL,
-                        color=self.theme.color_scheme.primary if is_selected else self.theme.color_scheme.on_surface
-                    ))
-                ],
-                spacing=15
-            ),
-            padding=ft.padding.symmetric(horizontal=15, vertical=12),
-            bgcolor=ft.Colors.with_opacity(0.1, self.theme.color_scheme.primary) if is_selected else ft.Colors.TRANSPARENT,
-            border_radius=10,
-            ink=True,
-            on_click=lambda e: on_click_action(view_id)
-        )
+    def _toggle_sidebar(self, e):
+        self.sidebar.toggle()
+        self.page.update()
 
     def _update_main_content(self):
         """Actualiza el área de contenido principal."""
         if self.current_view == "dashboard":
-            dashboard_view = DashboardView(self.page, self.theme)
-            self.content_area.content = dashboard_view.build()
+             dashboard_view = DashboardView(self.page, self.theme)
+             self.content_area.content = dashboard_view.build()
         else:
-            self.content_area.content = ft.Text(f"Vista '{self.current_view}' no implementada.")
+             self.content_area.content = ft.Text(f"Vista '{self.current_view}' no implementada.")
+        
         
         self.content_area.bgcolor = self.theme.color_scheme.surface
         self.page.update()
-
-    def _navigate_to_dashboard(self, view_id: str):
-        """Navega a la vista del dashboard."""
-        self.current_view = view_id
-        self._update_main_content()
     
     def show_change_password(self, e):
         """Muestra el diálogo de cambio de contraseña."""
