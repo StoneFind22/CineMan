@@ -48,7 +48,7 @@ class UserManager:
     def update_last_login(self, user_id: int):
         """Actualiza la fecha de último login"""
         try:
-            query = "UPDATE users SET last_login = GETDATE() WHERE id = ?"
+            query = "UPDATE users SET last_login = NOW() WHERE id = ?"
             self.db.execute_command(query, (user_id,))
         except Exception as e:
             print(f"Error actualizando último login: {e}")
@@ -75,7 +75,7 @@ class UserManager:
             query = """
             INSERT INTO users (username, password_hash, role, full_name, email, 
                              is_active, created_date)
-            VALUES (?, ?, ?, ?, ?, 1, GETDATE())
+            VALUES (?, ?, ?, ?, ?, 1, NOW())
             """
             
             return self.db.execute_command(
