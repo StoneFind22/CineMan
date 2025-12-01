@@ -7,12 +7,12 @@ class Config:
     """Configuración global del sistema POS Cinema"""
     
     # Configuración de Base de Datos
-    DB_SERVER = os.getenv("DB_SERVER", "localhost")
+    # Configuración de Base de Datos
+    DB_HOST = os.getenv("DB_HOST", "localhost")
+    DB_PORT = int(os.getenv("DB_PORT", 3306))
     DB_NAME = os.getenv("DB_NAME", "POS_CINEMA_DB")
-    DB_DRIVER = os.getenv("DB_DRIVER", "{ODBC Driver 17 for SQL Server}")
-    DB_USER = os.getenv("DB_USER", "")
+    DB_USER = os.getenv("DB_USER", "root")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "")
-    DB_TRUSTED_CONNECTION = os.getenv("DB_TRUSTED_CONNECTION", "yes")
     
     # Configuración de la Aplicación
     APP_TITLE = "POS Cinema - Sistema de Ventas"

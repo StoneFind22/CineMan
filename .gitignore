@@ -20,7 +20,7 @@ env/
 *.db
 *.sqlite
 *.sqlite3
-
+yoyo.ini
 # IDE
 .vscode/
 .idea/
@@ -35,10 +35,6 @@ Thumbs.db
 # Project specific and monolithic project
 pos_cinema.py
 CONSULTAS_SQL/
-pos_cinema.py.backup
-pos_cinema.py.old
-debug_*.py
-check_drivers.py
 
 # Logs
 *.log

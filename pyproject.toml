@@ -1,13 +1,14 @@
 [project]
 name = "cine"
 version = "0.1.0"
-description = "Add your description here"
+description = "Project CineMan"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "bcrypt>=5.0.0",
-    "flet>=0.28.3",
-    "pyodbc>=5.3.0",
+    "cryptography>=41.0.0",
+    "flet[all]>=0.28.3",
+    "pymysql>=1.0.0",
     "python-dotenv>=1.2.1",
     "yoyo-migrations>=9.0.0",
 ]

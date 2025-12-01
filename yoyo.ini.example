@@ -1,0 +1,5 @@
+[DEFAULT]
+sources = migrations
+database = mysql://<user>:<password>@<host>:<port>/<database_name>
+batch_mode = off
+verbosity = 0
