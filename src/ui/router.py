@@ -60,6 +60,7 @@ class Router:
 
         return MainScreen(
             page=self.page,
+            user_manager=self.user_manager,
             toggle_theme_callback=self.toggle_theme_callback,
             router=self,
             theme=self._get_current_theme(),

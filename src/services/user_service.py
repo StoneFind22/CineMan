@@ -1,5 +1,9 @@
+import logging
 from typing import Optional, Dict
 from src.utils.security import SecurityUtils
+from src.database.connection import DatabaseError
+
+logger = logging.getLogger(__name__)
 
 class UserManager:
     """Maneja todas las operaciones relacionadas con usuarios"""
@@ -25,9 +29,7 @@ class UserManager:
             user_data = result[0]
             stored_hash = user_data[2]
             
-            # Verificar contraseña
             if SecurityUtils.verify_password(password, stored_hash):
-                # Actualizar último login
                 self.update_last_login(user_data[0])
                 
                 return {
@@ -41,8 +43,11 @@ class UserManager:
             
             return None
             
+        except DatabaseError as e:
+            logger.exception(f"Error de base de datos al autenticar a {username}: {e}")
+            return None
         except Exception as e:
-            print(f"Error autenticando usuario: {e}")
+            logger.exception(f"Error inesperado al autenticar a {username}: {e}")
             return None
     
     def update_last_login(self, user_id: int):
@@ -50,64 +55,62 @@ class UserManager:
         try:
             query = "UPDATE users SET last_login = NOW() WHERE id = ?"
             self.db.execute_command(query, (user_id,))
-        except Exception as e:
-            print(f"Error actualizando último login: {e}")
-    
+        except DatabaseError as e:
+            logger.error(f"Error de BD al actualizar último login para user_id {user_id}: {e}")
+
     def create_user(self, username: str, password: str, role: str, 
                    full_name: str, email: str = None) -> bool:
-        """Crea un nuevo usuario"""
+        """Crea un nuevo usuario y retorna True si fue exitoso."""
         try:
-            # Validar que el usuario no exista
             existing = self.db.execute_scalar(
                 "SELECT COUNT(*) FROM users WHERE username = ?", 
                 (username,)
             )
             
             if existing > 0:
+                logger.warning(f"Intento de crear usuario duplicado: {username}")
                 return False
             
-            # Hashear contraseña
             password_hash = SecurityUtils.hash_password(password)
             if not password_hash:
                 return False
             
-            # Insertar usuario
             query = """
-            INSERT INTO users (username, password_hash, role, full_name, email, 
-                             is_active, created_date)
-            VALUES (?, ?, ?, ?, ?, 1, NOW())
+            INSERT INTO users (username, password_hash, role, full_name, email)
+            VALUES (?, ?, ?, ?, ?)
             """
             
-            return self.db.execute_command(
+            new_id = self.db.execute_insert(
                 query, 
                 (username, password_hash, role.upper(), full_name, email)
             )
             
-        except Exception as e:
-            print(f"Error creando usuario: {e}")
+            return new_id is not None and new_id > 0
+            
+        except DatabaseError as e:
+            logger.exception(f"Error de BD al crear usuario {username}: {e}")
             return False
     
     def change_password(self, user_id: int, old_password: str, new_password: str) -> bool:
-        """Cambia la contraseña de un usuario"""
+        """Cambia la contraseña de un usuario."""
         try:
-            # Verificar contraseña actual
             current_hash = self.db.execute_scalar(
                 "SELECT password_hash FROM users WHERE id = ?", 
                 (user_id,)
             )
             
-            if not SecurityUtils.verify_password(old_password, current_hash):
+            if not current_hash or not SecurityUtils.verify_password(old_password, current_hash):
+                logger.warning(f"Intento de cambio de contraseña fallido (antigua no coincide) para user_id: {user_id}")
                 return False
             
-            # Hashear nueva contraseña
             new_hash = SecurityUtils.hash_password(new_password)
             if not new_hash:
                 return False
             
-            # Actualizar contraseña
             query = "UPDATE users SET password_hash = ? WHERE id = ?"
-            return self.db.execute_command(query, (new_hash, user_id))
+            rows_affected = self.db.execute_command(query, (new_hash, user_id))
+            return rows_affected > 0
             
-        except Exception as e:
-            print(f"Error cambiando contraseña: {e}")
+        except DatabaseError as e:
+            logger.exception(f"Error de BD al cambiar contraseña para user_id {user_id}: {e}")
             return False
