@@ -1,6 +1,6 @@
 import flet as ft
 from src.config.settings import Config
-from src.database.connection import db
+from src.database.connection import DatabaseConnection
 from src.services.user_service import UserManager
 from src.ui.theme import light_theme, dark_theme
 from src.ui.router import Router
@@ -8,7 +8,8 @@ from src.utils.security import current_session
 
 def main(page: ft.Page):
     """Función principal de la aplicación"""
-    
+
+    # --- Configuración de la página ---
     page.title = Config.APP_TITLE
     page.window_resizable = True
     page.window_min_width = 800
@@ -19,6 +20,11 @@ def main(page: ft.Page):
     page.dark_theme = dark_theme.text_theme
     page.padding = 0
 
+    # --- Creación de instancias y DI ---
+    db_connection = DatabaseConnection(pool_name="app_main_pool")
+    user_manager = UserManager(db_connection)
+
+    # --- Para eventos y callbacks ---
     animated_switcher = ft.AnimatedSwitcher(
         content=ft.Container(),
         transition=ft.AnimatedSwitcherTransition.FADE,
@@ -39,7 +45,6 @@ def main(page: ft.Page):
         is_light = page.theme_mode == ft.ThemeMode.LIGHT
         current_theme = light_theme if is_light else dark_theme
         
-        # Determine colors for high contrast
         confirm_text_color = ft.Colors.WHITE if is_light else ft.Colors.BLACK
         
         dialog = ft.AlertDialog(
@@ -63,7 +68,6 @@ def main(page: ft.Page):
         )
         page.open(dialog)
 
-    user_manager = UserManager(db)
     router = Router(page, user_manager, animated_switcher, open_logout_dialog)
 
     def toggle_theme(e):
@@ -73,10 +77,20 @@ def main(page: ft.Page):
 
     router.toggle_theme_callback = toggle_theme
     
+    # --- Logica de inicializacion ---
+    def window_event_handler(e):
+        if e.data == "close":
+            print("Cerrando la aplicación, limpiando recursos...")
+            db_connection.close()
+            page.window.destroy()
+
+    page.window.on_event = window_event_handler
+    page.window.prevent_close = True
+
     page.add(animated_switcher)
 
-    if not db.test_connection():
-        animated_switcher.content = ft.Text("Error de conexión a la base de datos. Revise .env")
+    if not db_connection.test_connection():
+        animated_switcher.content = ft.Text("Error de conexión a la base de datos. Revise la configuración.")
         page.update()
         return
     

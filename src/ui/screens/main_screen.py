@@ -4,7 +4,6 @@ from src.utils.security import current_session
 from src.ui.views.dashboard_view import DashboardView
 from src.ui.components.dialogs import ChangePasswordDialog
 from src.services.user_service import UserManager
-from src.database.connection import db
 from src.ui.theme import AppTheme
 from src.ui.components.sidebar import Sidebar
 
@@ -14,8 +13,9 @@ class MainScreen:
     con el nuevo sistema de temas y router.
     """
     
-    def __init__(self, page: ft.Page, toggle_theme_callback, router, theme: AppTheme, open_logout_dialog_callback):
+    def __init__(self, page: ft.Page, user_manager: UserManager, toggle_theme_callback, router, theme: AppTheme, open_logout_dialog_callback):
         self.page = page
+        self.user_manager = user_manager
         self.toggle_theme_callback = toggle_theme_callback
         self.router = router
         self.theme = theme
@@ -127,8 +127,7 @@ class MainScreen:
     
     def show_change_password(self, e):
         """Muestra el diálogo de cambio de contraseña."""
-        user_manager = UserManager(db)
-        dialog = ChangePasswordDialog(self.page, user_manager, self.theme)
+        dialog = ChangePasswordDialog(self.page, self.user_manager, self.theme)
         dialog.show()
     
     def show_logout_dialog(self, e):
