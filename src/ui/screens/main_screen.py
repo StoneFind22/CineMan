@@ -123,7 +123,6 @@ class MainScreen:
         """Actualiza el área de contenido principal basado en la vista actual."""
         view_map = {
             "dashboard": DashboardView,
-            "sales": SalesView,
             "inventory": InventoryView,
             "reports": ReportsView,
             "schedules": SchedulesView,
@@ -133,7 +132,13 @@ class MainScreen:
         
         view_class = view_map.get(self.current_view)
         
-        if view_class:
+        if self.current_view == "dashboard":
+            view_instance = DashboardView(
+                on_new_sale_click=self.router.go_to_sales_view,
+                theme=self.theme
+            )
+            self.content_area.content = view_instance.build()
+        elif view_class:
             view_instance = view_class(self.page, self.theme)
             self.content_area.content = view_instance.build()
         else:

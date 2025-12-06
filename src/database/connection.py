@@ -90,7 +90,7 @@ class DatabaseConnection:
         query = self._prepare_query(query)
         try:
             with self.get_connection() as conn:
-                with conn.cursor() as cursor:
+                with conn.cursor(dictionary=True) as cursor:
                     cursor.execute(query, params or ())
                     return cursor.fetchall()
         except DBError as e:
@@ -148,10 +148,10 @@ class DatabaseConnection:
         query = self._prepare_query(query)
         try:
             with self.get_connection() as conn:
-                with conn.cursor() as cursor:
+                with conn.cursor(dictionary=True) as cursor:
                     cursor.execute(query, params or ())
                     result = cursor.fetchone()
-                    return result[0] if result else None
+                    return list(result.values())[0] if result else None
         except DBError as e:
             logger.exception(f"Error al ejecutar la consulta escalar: {query}")
             raise DatabaseError("Error al ejecutar la consulta escalar.") from e

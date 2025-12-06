@@ -163,6 +163,10 @@ class Sidebar(ft.Container):
         )
     
     def _navigate(self, view_id: str):
+        if view_id == "sales":
+            self.main_screen.router.go_to_sales_view()
+            return
+            
         self.main_screen.current_view = view_id
         self.main_screen._update_main_content()
         # actualiza el sidebar para reflejar la nueva seleccion
