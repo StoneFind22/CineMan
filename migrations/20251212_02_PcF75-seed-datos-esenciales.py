@@ -1,12 +1,12 @@
 """
-seed_user_roles
+seed_datos_esenciales
 """
 
 from yoyo import step
 
-__depends__ = {'20251126_01_wGjzL-initial-schema'}
+__depends__ = {'20251212_01_10msb-schema-base-completa'}
 
-# Contraseña para todos los usuarios: 'admin'
+# Contraseña para todos los usuarios de prueba: 'admin'
 # Hash generado con bcrypt
 password_hash = "$2b$12$VFO3taPdHi7YRjBuVT/zFejAyGErFAdMkymElCtfiKZ7uQ2U72.ye"
 
@@ -22,5 +22,10 @@ steps = [
         """
         DELETE FROM users WHERE username IN ('admin', 'gerencial', 'trabajador')
         """
+    ),
+    step(
+        """INSERT INTO seat_types (name, price_modifier) VALUES 
+           ('General', 1.00), ('VIP', 1.50), ('Discapacitados', 1.00)""",
+        "DELETE FROM seat_types WHERE name IN ('General', 'VIP', 'Discapacitados')"
     )
 ]

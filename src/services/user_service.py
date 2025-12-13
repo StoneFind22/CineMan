@@ -27,18 +27,18 @@ class UserManager:
                 return None
             
             user_data = result[0]
-            stored_hash = user_data[2]
+            stored_hash = user_data['password_hash']
             
             if SecurityUtils.verify_password(password, stored_hash):
-                self.update_last_login(user_data[0])
+                self.update_last_login(user_data['id'])
                 
                 return {
-                    "id": user_data[0],
-                    "username": user_data[1],
-                    "role": user_data[3],
-                    "full_name": user_data[4],
-                    "email": user_data[5],
-                    "last_login": user_data[8]
+                    "id": user_data['id'],
+                    "username": user_data['username'],
+                    "role": user_data['role'],
+                    "full_name": user_data['full_name'],
+                    "email": user_data['email'],
+                    "last_login": user_data['last_login']
                 }
             
             return None

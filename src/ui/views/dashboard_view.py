@@ -1,44 +1,42 @@
 import flet as ft
-from datetime import datetime
-from src.ui.theme import AppTheme # For type hint
+import flet as ft
+from typing import Callable
 
 class DashboardView:
-    """Vista del dashboard principal, compatible con el nuevo sistema de temas."""
+    """Vista del dashboard principal, que ahora incluye el botón de Nueva Venta."""
     
-    def __init__(self, page: ft.Page, theme: AppTheme):
-        self.page = page
+    def __init__(self, on_new_sale_click: Callable[[], None], theme):
+        self.on_new_sale_click = on_new_sale_click
         self.theme = theme
 
-    def build(self):
+    def build(self) -> ft.Control:
         """Construye y retorna el contenido del dashboard."""
         
         welcome_text = ft.Text(
-            "Bienvenido al Sistema POS Cinema",
-            style=self.theme.text_theme.headline_medium
-        )
-        
-        date_text = ft.Text(
-            f"Hoy es {datetime.now().strftime('%A, %d de %B de %Y')}",
-            style=self.theme.text_theme.title_medium
-        )
-
-        initial_message = ft.Text(
-            "Actualmente, solo la funcionalidad de inicio de sesión está activa. "
-            "Más módulos estarán disponibles en futuras versiones.",
-            style=self.theme.text_theme.body_medium,
-            color=self.theme.color_scheme.outline,
-            italic=True,
+            "Bienvenido al Sistema",
+            style=self.theme.text_theme.headline_large,
             text_align=ft.TextAlign.CENTER
         )
         
+        new_sale_button = ft.ElevatedButton(
+            text="Nueva Venta",
+            icon=ft.Icons.POINT_OF_SALE,
+            on_click=lambda e: self.on_new_sale_click(),
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=10),
+                padding=ft.padding.symmetric(horizontal=30, vertical=20),
+                bgcolor=self.theme.color_scheme.primary,
+                color=self.theme.color_scheme.on_primary,
+            ),
+            height=60,
+        )
+
         return ft.Container(
             content=ft.Column(
                 [
                     welcome_text,
-                    ft.Container(height=10),
-                    date_text,
-                    ft.Container(height=50),
-                    initial_message,
+                    ft.Container(height=40),
+                    new_sale_button,
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -46,5 +44,5 @@ class DashboardView:
             ),
             alignment=ft.alignment.center,
             expand=True,
-            padding=20,
+            padding=30,
         )

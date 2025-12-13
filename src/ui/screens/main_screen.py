@@ -2,6 +2,14 @@ import flet as ft
 from datetime import datetime
 from src.utils.security import current_session
 from src.ui.views.dashboard_view import DashboardView
+from src.ui.views.sales_view import SalesView
+from src.ui.views.inventory_view import InventoryView
+from src.ui.views.reports_view import ReportsView
+from src.ui.views.schedules_view import SchedulesView
+from src.ui.views.users_view import UsersView
+from src.ui.views.settings_view import SettingsView
+from src.ui.views.admin.movies_view import MoviesView
+from src.ui.views.admin.theaters_view import TheatersView
 from src.ui.components.dialogs import ChangePasswordDialog
 from src.services.user_service import UserManager
 from src.ui.theme import AppTheme
@@ -114,13 +122,32 @@ class MainScreen:
         self.page.update()
 
     def _update_main_content(self):
-        """Actualiza el área de contenido principal."""
-        if self.current_view == "dashboard":
-             dashboard_view = DashboardView(self.page, self.theme)
-             self.content_area.content = dashboard_view.build()
-        else:
-             self.content_area.content = ft.Text(f"Vista '{self.current_view}' no implementada.")
+        """Actualiza el área de contenido principal basado en la vista actual."""
+        view_map = {
+            "dashboard": DashboardView,
+            "inventory": InventoryView,
+            "reports": ReportsView,
+            "schedules": SchedulesView,
+            "users": UsersView,
+            "users": UsersView,
+            "settings": SettingsView,
+            "movies": MoviesView,
+            "theaters": TheatersView,
+        }
         
+        view_class = view_map.get(self.current_view)
+        
+        if self.current_view == "dashboard":
+            view_instance = DashboardView(
+                on_new_sale_click=self.router.go_to_sales_view,
+                theme=self.theme
+            )
+            self.content_area.content = view_instance.build()
+        elif view_class:
+            view_instance = view_class(self.page, self.theme)
+            self.content_area.content = view_instance.build()
+        else:
+            self.content_area.content = ft.Text(f"Vista '{self.current_view}' no implementada.")
         
         self.content_area.bgcolor = self.theme.color_scheme.surface
         self.page.update()

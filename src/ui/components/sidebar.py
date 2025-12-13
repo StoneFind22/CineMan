@@ -2,16 +2,50 @@ import flet as ft
 from src.ui.theme import AppTheme
 from src.utils.security import current_session
 
+NAVIGATION_MAP = {
+    "TRABAJADOR": [
+        {"view_id": "sales", "title": "Ventas", "icon": ft.Icons.POINT_OF_SALE},
+    ],
+    "ADMINISTRADOR": [
+        {"view_id": "sales", "title": "Ventas", "icon": ft.Icons.POINT_OF_SALE},
+        {"view_id": "movies", "title": "Películas", "icon": ft.Icons.MOVIE},
+        {"view_id": "theaters", "title": "Salas", "icon": ft.Icons.CHAIR},
+        {"view_id": "inventory", "title": "Inventario", "icon": ft.Icons.INVENTORY},
+        {"view_id": "reports", "title": "Reportes", "icon": ft.Icons.BAR_CHART},
+        {"view_id": "schedules", "title": "Horarios", "icon": ft.Icons.SCHEDULE},
+    ],
+    "GERENCIAL": [
+        {"view_id": "users", "title": "Usuarios", "icon": ft.Icons.GROUP},
+        {"view_id": "settings", "title": "Configuración", "icon": ft.Icons.SETTINGS},
+    ],
+}
+
 class Sidebar(ft.Container):
     def __init__(self, main_screen, theme: AppTheme, expanded: bool = True):
         super().__init__()
         self.main_screen = main_screen
         self.theme = theme
         self.expanded = expanded
+        
+        # Build navigation items based on user role
         self.navigation_items = [
-            {"view_id": "dashboard", "title": "Dashboard", "icon": ft.Icons.DASHBOARD},
-            # aqui iran las nuevas opciones de navegacion
+            {"view_id": "dashboard", "title": "Dashboard", "icon": ft.Icons.DASHBOARD}
         ]
+        
+        user_role = current_session.role
+        role_permissions = NAVIGATION_MAP.get(user_role, [])
+        
+        self.navigation_items.extend(role_permissions)
+        
+        # Special case for GERENCIAL who can see all
+        if user_role == "GERENCIAL":
+            all_views = set(item['view_id'] for item in self.navigation_items)
+            for role, items in NAVIGATION_MAP.items():
+                if role != "GERENCIAL":
+                    for item in items:
+                        if item['view_id'] not in all_views:
+                            self.navigation_items.append(item)
+                            all_views.add(item['view_id'])
         
         self._configure()
 
@@ -131,6 +165,10 @@ class Sidebar(ft.Container):
         )
     
     def _navigate(self, view_id: str):
+        if view_id == "sales":
+            self.main_screen.router.go_to_sales_view()
+            return
+            
         self.main_screen.current_view = view_id
         self.main_screen._update_main_content()
         # actualiza el sidebar para reflejar la nueva seleccion
