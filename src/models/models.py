@@ -13,7 +13,7 @@ class MovieStatus(Enum):
     ARCHIVED = "Archived"
     COMING_SOON = "Coming Soon"
 
-class SeatType(Enum):
+class SeatTypeName(Enum):
     GENERAL = "General"
     VIP = "VIP"
     DISCAPACITADOS = "Discapacitados"
@@ -72,6 +72,13 @@ class Theater:
     total_capacity: int = 0
     is_active: bool = True
     created_at: Optional[datetime] = None
+
+@dataclass
+class SeatType:
+    """Modelo para tipos de asiento"""
+    id: int
+    name: str
+    price_modifier: Decimal
 
 @dataclass
 class Seat:
