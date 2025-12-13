@@ -108,21 +108,44 @@ def main(page: ft.Page):
     # --- Lógica de inicialización ---
     def window_event_handler(e):
         if e.data == "close":
-            print("Cerrando la aplicación, limpiando recursos...")
-            db_connection.close()
-            page.window.destroy()
+            print("Evento de cierre recibido. (IGNORADO TEMPORALMENTE)")
+            # try:
+            #     db_connection.close()
+            # except:
+            #     pass
+            # page.window.destroy()
 
     page.window.on_event = window_event_handler
     page.window.prevent_close = True
 
     page.add(animated_switcher)
 
-    if not db_connection.test_connection():
-        animated_switcher.content = ft.Text("Error de conexión a la base de datos. Revise la configuración.")
-        page.update()
+    print("Verificando conexión a base de datos...")
+    try:
+        if not db_connection.test_connection():
+            print("Fallo en test_connection")
+            animated_switcher.content = ft.Text("Error de conexión a la base de datos. Revise la configuración.")
+            page.update()
+            return
+        print("Conexión a base de datos exitosa.")
+    except Exception as e:
+        print(f"Excepción durante test_connection: {e}")
         return
     
-    show_login()
+    print("Mostrando login...")
+    try:
+        show_login()
+        print("Login mostrado.")
+    except Exception as e:
+        print(f"Error al mostrar login: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    print("Iniciando main...")
+    try:
+        ft.app(target=main)
+    except Exception as e:
+        print(f"Error fatal en ft.app: {e}")
+        import traceback
+        traceback.print_exc()

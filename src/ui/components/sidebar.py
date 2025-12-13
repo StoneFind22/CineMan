@@ -8,6 +8,8 @@ NAVIGATION_MAP = {
     ],
     "ADMINISTRADOR": [
         {"view_id": "sales", "title": "Ventas", "icon": ft.Icons.POINT_OF_SALE},
+        {"view_id": "movies", "title": "Películas", "icon": ft.Icons.MOVIE},
+        {"view_id": "theaters", "title": "Salas", "icon": ft.Icons.CHAIR},
         {"view_id": "inventory", "title": "Inventario", "icon": ft.Icons.INVENTORY},
         {"view_id": "reports", "title": "Reportes", "icon": ft.Icons.BAR_CHART},
         {"view_id": "schedules", "title": "Horarios", "icon": ft.Icons.SCHEDULE},

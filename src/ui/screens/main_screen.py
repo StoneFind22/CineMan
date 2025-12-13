@@ -8,6 +8,8 @@ from src.ui.views.reports_view import ReportsView
 from src.ui.views.schedules_view import SchedulesView
 from src.ui.views.users_view import UsersView
 from src.ui.views.settings_view import SettingsView
+from src.ui.views.admin.movies_view import MoviesView
+from src.ui.views.admin.theaters_view import TheatersView
 from src.ui.components.dialogs import ChangePasswordDialog
 from src.services.user_service import UserManager
 from src.ui.theme import AppTheme
@@ -127,7 +129,10 @@ class MainScreen:
             "reports": ReportsView,
             "schedules": SchedulesView,
             "users": UsersView,
+            "users": UsersView,
             "settings": SettingsView,
+            "movies": MoviesView,
+            "theaters": TheatersView,
         }
         
         view_class = view_map.get(self.current_view)

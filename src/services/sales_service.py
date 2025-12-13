@@ -25,20 +25,20 @@ class SalesService:
                 m.poster_url,
                 m.duration_minutes,
                 s.id AS showtime_id,
-                s.show_time,
-                r.name AS room_name,
-                s.format -- e.g., '2D', '3D', 'SUB', 'DOB'
+                s.start_time, -- Corregido: show_time -> start_time
+                t.name AS theater_name,
+                s.projection_type AS format -- e.g., '2D', '3D', 'SUB', 'DOB'
             FROM
                 movies m
             JOIN
                 showtimes s ON m.id = s.movie_id
             JOIN
-                rooms r ON s.room_id = r.id
+                theaters t ON s.theater_id = t.id
             WHERE
-                m.is_active = 1
-                AND DATE(s.show_time) = CURDATE()
+                m.status = 'ACTIVE'
+                AND DATE(s.start_time) = CURDATE()
             ORDER BY
-                m.title, s.show_time;
+                m.title, s.start_time;
             """
             results = self.db.execute_query(query)
             
@@ -55,10 +55,13 @@ class SalesService:
                         "showtimes": []
                     }
                 
+                # start_time es datetime, extraemos la hora
+                time_str = row['start_time'].strftime('%H:%M') if row['start_time'] else "00:00"
+                
                 movies[movie_id]["showtimes"].append({
                     "showtime_id": row['showtime_id'],
-                    "show_time": row['show_time'].strftime('%H:%M'), # Formatear solo la hora
-                    "room_name": row['room_name'],
+                    "show_time": time_str,
+                    "room_name": row['theater_name'],
                     "format": row['format']
                 })
             
@@ -81,40 +84,40 @@ class SalesService:
         try:
             query = """
             SELECT
-                r.id as room_id,
-                r.name as room_name,
-                r.rows as room_rows,
-                r.cols as room_cols,
+                t.id as theater_id,
+                t.name as theater_name,
+                -- t.rows and t.cols no longer exist directly, we infer or just return name
                 s.id as seat_id,
-                s.row as seat_row,
-                s.col as seat_col,
+                s.row_label as seat_row,
+                s.number as seat_col,
                 CASE
-                    WHEN t.id IS NOT NULL THEN 'occupied'
+                    WHEN tic.id IS NOT NULL THEN 'occupied'
                     ELSE 'available'
                 END as status
             FROM
                 showtimes st
             JOIN
-                rooms r ON st.room_id = r.id
+                theaters t ON st.theater_id = t.id
             JOIN
-                seats s ON r.id = s.room_id
+                seats s ON t.id = s.theater_id
             LEFT JOIN
-                tickets t ON s.id = t.seat_id AND t.showtime_id = st.id
+                tickets tic ON s.id = tic.seat_id AND tic.showtime_id = st.id
             WHERE
-                st.id = ?
+                st.id = %s
             ORDER BY
-                s.row, s.col;
+                s.y_position, s.x_position;
             """
             results = self.db.execute_query(query, (showtime_id,))
 
             if not results:
                 return {"layout": {}, "seats": []}
             
+            # Infer rows/cols from seats if needed, or just pass basic info
             layout_info = {
-                "room_id": results[0]['room_id'],
-                "room_name": results[0]['room_name'],
-                "rows": results[0]['room_rows'],
-                "cols": results[0]['room_cols'],
+                "room_id": results[0]['theater_id'],
+                "room_name": results[0]['theater_name'],
+                "rows": 0, # Legacy support
+                "cols": 0, # Legacy support
             }
             
             return {
