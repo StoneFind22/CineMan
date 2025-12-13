@@ -3,6 +3,8 @@ from src.ui.theme import AppTheme
 from src.services.theater_service import TheaterService
 from src.database.connection import DatabaseConnection
 from src.models.models import Theater
+from src.ui.views.admin.theater_dialog import TheaterDialog
+from src.ui.views.admin.seat_editor_dialog import SeatEditorDialog
 
 class TheatersView(ft.Container):
     def __init__(self, page: ft.Page, theme: AppTheme):
@@ -48,7 +50,7 @@ class TheatersView(ft.Container):
                         bgcolor=self.theme.color_scheme.primary,
                         color=self.theme.color_scheme.on_primary,
                     ),
-                    on_click=self._open_new_theater_dialog
+                    on_click=lambda e: self._open_theater_dialog()
                 )
             ]
         )
@@ -61,8 +63,8 @@ class TheatersView(ft.Container):
     def _load_theaters(self):
         self.theaters = self.theater_service.get_all_theaters()
         self.list_view.controls = [self._build_theater_item(t) for t in self.theaters]
-        if self.list_view.page:
-            self.list_view.update()
+        if self.page:
+            self.page.update()
 
     def _build_theater_item(self, theater: Theater):
         return ft.Container(
@@ -78,7 +80,8 @@ class TheatersView(ft.Container):
                     ),
                     ft.Container(expand=True),
                     ft.OutlinedButton("Diseñar Layout", icon=ft.Icons.GRID_ON, on_click=lambda e: self._open_layout_editor(theater)),
-                    ft.IconButton(ft.Icons.EDIT, tooltip="Editar Info"),
+                    ft.IconButton(ft.Icons.EDIT, tooltip="Editar Info", on_click=lambda e: self._open_theater_dialog(theater)),
+                    ft.IconButton(ft.Icons.DELETE, tooltip="Eliminar Sala", on_click=lambda e: self._open_delete_dialog(theater), icon_color=self.theme.color_scheme.error),
                 ],
                 alignment=ft.MainAxisAlignment.START
             ),
@@ -87,55 +90,50 @@ class TheatersView(ft.Container):
             border_radius=10
         )
 
-    def _open_new_theater_dialog(self, e):
-        print("Abriendo diálogo de nueva sala...")
-        # Diálogo simple para crear sala (Nombre, Filas, Columnas)
-        name_field = ft.TextField(label="Nombre de Sala", border_radius=8)
-        rows_field = ft.TextField(label="Filas", value="10", keyboard_type=ft.KeyboardType.NUMBER, border_radius=8)
-        cols_field = ft.TextField(label="Columnas", value="15", keyboard_type=ft.KeyboardType.NUMBER, border_radius=8)
-        
-        def on_create(e):
-            print("Botón Crear Sala presionado.")
-            try:
-                t = Theater(name=name_field.value)
-                rows = int(rows_field.value)
-                cols = int(cols_field.value)
-                print(f"Intentando crear sala: {t.name}, {rows}x{cols}")
-                
-                res = self.theater_service.create_theater(t, rows, cols)
-                print(f"Resultado create_theater: {res}")
-                
-                self.page.close(dlg) # Close the specific dialog
-                self._load_theaters()
-                
-                self.page.snack_bar = ft.SnackBar(ft.Text("Sala creada", color=ft.Colors.WHITE), bgcolor=ft.Colors.GREEN)
-                self.page.snack_bar.open = True
-                self.page.update()
-            except Exception as ex:
-                print(f"Excepción en on_create: {ex}")
-                self.page.snack_bar = ft.SnackBar(ft.Text(f"Error: {ex}", color=ft.Colors.WHITE), bgcolor=ft.Colors.RED)
-                self.page.snack_bar.open = True
-                self.page.update()
+    def _open_theater_dialog(self, theater: Theater = None):
+        """Abre el diálogo para crear una nueva sala o editar una existente."""
+        dialog = TheaterDialog(
+            page=self.page,
+            theme=self.theme,
+            theater_service=self.theater_service,
+            on_save=self._load_theaters, # Callback para refrescar la lista.
+            theater=theater
+        )
+        self.page.open(dialog)
 
-        dlg = ft.AlertDialog(
-            title=ft.Text("Nueva Sala", weight=ft.FontWeight.BOLD),
-            content=ft.Column([name_field, rows_field, cols_field], height=200, spacing=15),
+    def _open_delete_dialog(self, theater: Theater):
+        """Abre un diálogo de confirmación antes de eliminar una sala."""
+        def on_delete_confirm(e):
+            try:
+                self.theater_service.delete_theater(theater.id)
+                self.page.close(delete_dialog)
+                self._load_theaters()
+                self.page.snack_bar = ft.SnackBar(ft.Text("Sala eliminada con éxito"), bgcolor=ft.Colors.GREEN)
+            except Exception as ex:
+                self.page.snack_bar = ft.SnackBar(ft.Text(f"Error al eliminar: {ex}"), bgcolor=ft.Colors.RED)
+            self.page.snack_bar.open = True
+            self.page.update()
+
+        delete_dialog = ft.AlertDialog(
+            title=ft.Text("Confirmar Eliminación"),
+            content=ft.Text(f"¿Estás seguro de que quieres eliminar la sala '{theater.name}'?"),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: self.page.close(dlg)),
-                ft.ElevatedButton("Crear", on_click=on_create, bgcolor=self.theme.color_scheme.primary, color=self.theme.color_scheme.on_primary)
+                ft.TextButton("Cancelar", on_click=lambda e: self.page.close(delete_dialog)),
+                ft.ElevatedButton("Eliminar", on_click=on_delete_confirm, bgcolor=self.theme.color_scheme.error, color=self.theme.color_scheme.on_error),
             ],
             shape=ft.RoundedRectangleBorder(radius=12)
         )
-        self.page.open(dlg)
+        self.page.open(delete_dialog)
 
     def _open_layout_editor(self, theater: Theater):
-        from src.ui.views.admin.seat_editor_dialog import SeatEditorDialog
-        
+        """Abre el editor visual de layout de asientos para una sala."""
         def on_save():
+            # Muestra feedback y recarga la lista para actualizar la capacidad.
             self.page.snack_bar = ft.SnackBar(ft.Text("Layout guardado exitosamente", color=ft.Colors.WHITE), bgcolor=ft.Colors.GREEN)
             self.page.snack_bar.open = True
-            self.page.update()
             self._load_theaters()
+            if self.page:
+                self.page.update()
 
         dlg = SeatEditorDialog(self.page, self.theme, theater, self.theater_service, on_save)
         self.page.open(dlg)

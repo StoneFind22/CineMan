@@ -22,7 +22,23 @@ def main(page: ft.Page):
     page.padding = 0
 
     # --- Creación de instancias y DI ---
-    db_connection = DatabaseConnection(pool_name="app_main_pool")
+    # Verifica la conexión a la base de datos al instanciar DatabaseConnection.
+    print("Verificando conexión a base de datos...")
+    try:
+        db_connection = DatabaseConnection(pool_name="app_main_pool")
+        print("Conexión a base de datos exitosa.")
+    except Exception as e:
+        print(f"Error al conectar a la base de datos: {e}")
+        # Muestra un mensaje de error en la UI y detiene la carga si la conexión falla.
+        page.add(ft.Column([
+            ft.Icon(ft.Icons.ERROR_OUTLINE, color=ft.Colors.RED, size=64),
+            ft.Text("Error Crítico de Conexión", style=ft.TextThemeStyle.HEADLINE_MEDIUM),
+            ft.Text("No se pudo conectar a la base de datos. Verifique la configuración y reinicie la aplicación.", style=ft.TextThemeStyle.BODY_MEDIUM),
+            ft.Text(f"Detalle: {e}", style=ft.TextThemeStyle.BODY_SMALL, color=ft.Colors.GREY_500),
+        ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=True, spacing=10))
+        page.update()
+        return
+
     user_manager = UserManager(db_connection)
     sales_service = SalesService(db_connection)
 
@@ -119,18 +135,6 @@ def main(page: ft.Page):
     page.window.prevent_close = True
 
     page.add(animated_switcher)
-
-    print("Verificando conexión a base de datos...")
-    try:
-        if not db_connection.test_connection():
-            print("Fallo en test_connection")
-            animated_switcher.content = ft.Text("Error de conexión a la base de datos. Revise la configuración.")
-            page.update()
-            return
-        print("Conexión a base de datos exitosa.")
-    except Exception as e:
-        print(f"Excepción durante test_connection: {e}")
-        return
     
     print("Mostrando login...")
     try:
