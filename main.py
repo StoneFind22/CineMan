@@ -3,6 +3,7 @@ from src.config.settings import Config
 from src.database.connection import DatabaseConnection
 from src.services.user_service import UserManager
 from src.services.sales_service import SalesService
+from src.services.inventory_service import InventoryService
 from src.ui.theme import light_theme, dark_theme
 from src.ui.router import ViewProvider
 from src.utils.security import current_session
@@ -22,7 +23,6 @@ def main(page: ft.Page):
     page.padding = 0
 
     # --- Creación de instancias y DI ---
-    # Verifica la conexión a la base de datos al instanciar DatabaseConnection.
     print("Verificando conexión a base de datos...")
     try:
         db_connection = DatabaseConnection(pool_name="app_main_pool")
@@ -40,7 +40,8 @@ def main(page: ft.Page):
         return
 
     user_manager = UserManager(db_connection)
-    sales_service = SalesService(db_connection)
+    inventory_service = InventoryService(db_connection)
+    sales_service = SalesService(db_connection, inventory_service)
 
     animated_switcher = ft.AnimatedSwitcher(
         content=ft.Container(),
@@ -50,7 +51,7 @@ def main(page: ft.Page):
         expand=True
     )
     
-    view_provider = ViewProvider(page, user_manager, sales_service)
+    view_provider = ViewProvider(page, user_manager, sales_service, inventory_service)
 
     # --- Lógica de Navegación Principal ---
     current_view_name = "login"
@@ -124,15 +125,15 @@ def main(page: ft.Page):
     # --- Lógica de inicialización ---
     def window_event_handler(e):
         if e.data == "close":
-            print("Evento de cierre recibido. (IGNORADO TEMPORALMENTE)")
-            # try:
-            #     db_connection.close()
-            # except:
-            #     pass
-            # page.window.destroy()
+            print("Evento de cierre recibido. Terminando la aplicación...")
+            try:
+                db_connection.close()
+                print("Conexión a la base de datos cerrada.")
+            except Exception as ex:
+                print(f"Error al cerrar la conexión a la DB: {ex}")
+            page.window_destroy()
 
     page.window.on_event = window_event_handler
-    page.window.prevent_close = True
 
     page.add(animated_switcher)
     
