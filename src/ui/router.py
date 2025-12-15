@@ -4,6 +4,7 @@ from src.ui.screens.login_screen import LoginScreen
 from src.ui.screens.main_screen import MainScreen
 from src.ui.views.sales_view import SalesView 
 from src.services.user_service import UserManager
+from src.services.inventory_service import InventoryService
 from src.ui.theme import light_theme, dark_theme
 
 class ViewProvider:
@@ -11,10 +12,11 @@ class ViewProvider:
     Provee y construye las vistas/pantallas principales de la aplicación,
     inyectando las dependencias y callbacks necesarios.
     """
-    def __init__(self, page: ft.Page, user_manager: UserManager, sales_service):
+    def __init__(self, page: ft.Page, user_manager: UserManager, sales_service, inventory_service: InventoryService):
         self.page = page
         self.user_manager = user_manager
         self.sales_service = sales_service
+        self.inventory_service = inventory_service
         self.toggle_theme_callback = None
         self.open_logout_dialog_callback = None
         self._main_screen_instance = None
@@ -55,6 +57,7 @@ class ViewProvider:
         self._main_screen_instance = MainScreen(
             page=self.page,
             user_manager=self.user_manager,
+            inventory_service=self.inventory_service,
             toggle_theme_callback=self.toggle_theme_callback,
             router=SalesViewRouter(),
             theme=self._get_current_theme(),

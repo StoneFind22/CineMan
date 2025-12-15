@@ -99,3 +99,50 @@ class ChangePasswordDialog:
         self.error_text.value = message
         self.error_text.visible = True
         self.page.update()
+
+
+# --- Funciones de Diálogo Genéricas ---
+
+def close_dialog_helper(page: ft.Page, dialog: ft.AlertDialog):
+    """Función auxiliar para cerrar un diálogo."""
+    dialog.open = False
+    page.update()
+
+def show_info_dialog(page: ft.Page, title: str, content: str):
+    """
+    Muestra un diálogo de información simple.
+    """
+    info_dialog = ft.AlertDialog(
+        modal=True,
+        title=ft.Text(title),
+        content=ft.Text(content),
+        actions=[
+            ft.TextButton("OK", on_click=lambda e: close_dialog_helper(page, info_dialog)),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+    page.dialog = info_dialog
+    info_dialog.open = True
+    page.update()
+
+def show_confirm_dialog(page: ft.Page, title: str, content: str, on_confirm: callable):
+    """
+    Muestra un diálogo de confirmación con acciones.
+    """
+    def on_confirm_wrapper(e):
+        close_dialog_helper(page, confirm_dialog)
+        on_confirm(e)
+
+    confirm_dialog = ft.AlertDialog(
+        modal=True,
+        title=ft.Text(title),
+        content=ft.Text(content),
+        actions=[
+            ft.TextButton("Cancelar", on_click=lambda e: close_dialog_helper(page, confirm_dialog)),
+            ft.ElevatedButton("Confirmar", on_click=on_confirm_wrapper),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+    page.dialog = confirm_dialog
+    confirm_dialog.open = True
+    page.update()
