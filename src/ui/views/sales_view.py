@@ -11,8 +11,6 @@ class SalesView(ft.Container):
     Vista de pantalla completa para el proceso de ventas, con un layout de 
     contenido principal y un panel de resumen de orden.
     """
-    TICKET_PRICES = {"Adulto": 15.00, "Niño": 10.00, "3ra Edad": 8.00}
-
     def __init__(self, on_exit_sale_mode: Callable[[], None], theme, sales_service: SalesService):
         super().__init__()
         self.on_exit_sale_mode = on_exit_sale_mode
@@ -21,6 +19,7 @@ class SalesView(ft.Container):
         
         self.transaction = Transaction()
         self.movies: List[Dict[str, Any]] = []
+        self.current_ticket_prices: Dict[str, float] = {}
         self.selected_movie: Dict[str, Any] | None = None
         self.selected_showtime: Dict[str, Any] | None = None
         self.selected_ticket_type: str = "Adulto"
@@ -141,6 +140,8 @@ class SalesView(ft.Container):
         self.content_area.content = ft.Stack([self.loading_indicator], expand=True)
         self.update()
         
+        # Obtener precios dinámicos y mapa de asientos en paralelo
+        self.current_ticket_prices = self.sales_service.get_ticket_prices_for_showtime(showtime["showtime_id"])
         seat_data = self.sales_service.get_seat_map(showtime["showtime_id"])
         
         if not seat_data.get("seats"):
@@ -150,13 +151,20 @@ class SalesView(ft.Container):
                 ft.Text("No se pudo cargar la información de los asientos para esta función.")
             ])
         else:
+            # Crear segmentos basados en los precios obtenidos
+            price_segments = []
+            for ticket_type, price in self.current_ticket_prices.items():
+                # El ícono se puede mapear o dejar genérico
+                icon = ft.icons.PERSON
+                if ticket_type == "Niño":
+                    icon = ft.icons.CHILD_CARE
+                elif ticket_type == "3ra Edad":
+                    icon = ft.icons.ELDERLY
+                price_segments.append(ft.Segment(value=ticket_type, label=ft.Text(f"{ticket_type} (S/ {price:.2f})"), icon=ft.Icon(icon)))
+
             ticket_type_selector = ft.SegmentedButton(
                 on_change=self._on_ticket_type_changed, selected={self.selected_ticket_type},
-                segments=[
-                    ft.Segment(value="Adulto", label=ft.Text("Adulto"), icon=ft.Icon(ft.Icons.PERSON)),
-                    ft.Segment(value="Niño", label=ft.Text("Niño"), icon=ft.Icon(ft.Icons.CHILD_CARE)),
-                    ft.Segment(value="3ra Edad", label=ft.Text("3ra Edad"), icon=ft.Icon(ft.Icons.ELDERLY)),
-                ]
+                segments=price_segments
             )
             seat_map_component = SeatMap(seat_data, self._on_seat_selected, self.theme)
             self.content_area.content = ft.Column([
@@ -184,7 +192,7 @@ class SalesView(ft.Container):
                 showtime_id=self.selected_showtime["showtime_id"],
                 seat=Seat(row=seat_info['seat_row'], number=seat_info['seat_col'], seat_id=seat_info['seat_id']),
                 ticket_type=self.selected_ticket_type,
-                price=self.TICKET_PRICES.get(self.selected_ticket_type, 0.0)
+                price=self.current_ticket_prices.get(self.selected_ticket_type, 0.0)
             ))
         else:
             self.transaction.remove_ticket_by_seat(seat_info['seat_id'])

@@ -77,6 +77,33 @@ class SalesService:
             logger.exception(f"Error al obtener mapa de asientos para showtime_id {showtime_id}: {e}")
             return {}
 
+    def get_ticket_prices_for_showtime(self, showtime_id: int) -> Dict[str, float]:
+        """
+        Obtiene los precios de los boletos para una función específica.
+        """
+        try:
+            query = """
+                SELECT pp.base_price_general, pp.base_price_child, pp.base_price_senior
+                FROM showtimes s
+                JOIN price_profiles pp ON s.price_profile_id = pp.id
+                WHERE s.id = ?;
+            """
+            result = self.db.execute_query(query, (showtime_id,), fetch_one=True)
+            
+            if not result:
+                logger.warning(f"No se encontró perfil de precios para showtime_id {showtime_id}. Usando precios de respaldo.")
+                return {"Adulto": 15.00, "Niño": 10.00, "3ra Edad": 8.00}
+
+            return {
+                "Adulto": float(result['base_price_general']),
+                "Niño": float(result['base_price_child']),
+                "3ra Edad": float(result['base_price_senior'])
+            }
+        except (DatabaseError, Exception) as e:
+            logger.exception(f"Error al obtener precios para showtime_id {showtime_id}: {e}")
+            # Fallback a precios por defecto en caso de error de BD
+            return {"Adulto": 15.00, "Niño": 10.00, "3ra Edad": 8.00}
+
     def get_concession_products(self) -> List[Dict[str, Any]]:
         """
         Obtiene una lista de todos los productos de confitería activos (no combos).
