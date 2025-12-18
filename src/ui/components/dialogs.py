@@ -56,14 +56,11 @@ class ChangePasswordDialog:
     
     def show(self):
         """Muestra el diálogo."""
-        self.page.dialog = self.dialog
-        self.dialog.open = True
-        self.page.update()
+        self.page.open(self.dialog)
     
     def close_dialog(self, e):
         """Cierra el diálogo."""
-        self.dialog.open = False
-        self.page.update()
+        self.page.close(self.dialog)
     
     def change_password(self, e):
         """Procesa el cambio de contraseña."""
@@ -105,8 +102,7 @@ class ChangePasswordDialog:
 
 def close_dialog_helper(page: ft.Page, dialog: ft.AlertDialog):
     """Función auxiliar para cerrar un diálogo."""
-    dialog.open = False
-    page.update()
+    page.close(dialog)
 
 def show_info_dialog(page: ft.Page, title: str, content: str):
     """
@@ -121,9 +117,7 @@ def show_info_dialog(page: ft.Page, title: str, content: str):
         ],
         actions_alignment=ft.MainAxisAlignment.END,
     )
-    page.dialog = info_dialog
-    info_dialog.open = True
-    page.update()
+    page.open(info_dialog)
 
 def show_confirm_dialog(page: ft.Page, title: str, content: str, on_confirm: callable):
     """
@@ -143,6 +137,4 @@ def show_confirm_dialog(page: ft.Page, title: str, content: str, on_confirm: cal
         ],
         actions_alignment=ft.MainAxisAlignment.END,
     )
-    page.dialog = confirm_dialog
-    confirm_dialog.open = True
-    page.update()
+    page.open(confirm_dialog)
