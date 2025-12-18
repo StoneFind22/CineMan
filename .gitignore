@@ -35,7 +35,7 @@ Thumbs.db
 # Project specific and monolithic project
 pos_cinema.py
 CONSULTAS_SQL/
-
+tests/
 # Logs
 *.log
 logs/

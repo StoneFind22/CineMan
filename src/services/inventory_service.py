@@ -100,6 +100,10 @@ class InventoryService:
             return None
 
     def update_product(self, product_id: int, data: Dict[str, Any]) -> bool:
+        """
+        Actualiza los datos comerciales de un producto.
+        NOTA: No actualiza la receta (BOM). Eso se maneja en 'update_recipe_for_product'.
+        """
         try:
             query = "UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, product_type = ?, track_stock = ?, is_active = ? WHERE id = ?"
             params = (data['name'], data.get('description'), data['price'], data['category_id'], data.get('product_type', 'SIMPLE'), data.get('track_stock', True), data.get('is_active', True), product_id)

@@ -180,8 +180,27 @@ class Sidebar(ft.Container):
         self._configure()
         self.update()
 
-    def update_theme(self, theme: AppTheme):
-        """ actualiza el tema y redibuja el sidebar"""
-        self.theme = theme
-        self._configure()
-        self.update()
+    def update_theme(self, new_theme: AppTheme):
+        """Actualiza el tema visual del Sidebar."""
+        self.theme = new_theme
+        # Reconstruir estilos de botones
+        for item in self.nav_items.values():
+            if isinstance(item, ft.Container) and item.on_click:
+                 # Esto es un hack ligero, idealmente regeneraríamos todo el contenido
+                 pass
+        
+        # Actualizar colores del contenedor principal
+        self.gradient = ft.LinearGradient(
+            begin=ft.alignment.top_center,
+            end=ft.alignment.bottom_center,
+            colors=[
+                self.theme.color_scheme.surface_variant,
+                self.theme.color_scheme.surface,
+            ],
+        )
+        self.border = ft.border.only(right=ft.border.BorderSide(1, self.theme.color_scheme.outline_variant))
+        if self.page:
+            try:
+                self.update()
+            except Exception:
+                pass

@@ -131,14 +131,11 @@ class InventoryImportDialog(ft.AlertDialog):
         self.update()
 
     def close_dialog(self, e):
-        self.open = False
-        self.page.update()
+        self.page.close(self)
 
     def show(self, page: ft.Page):
         self.page = page
         # El FilePicker debe estar en la overlay de la página para funcionar
         if self.file_picker not in self.page.overlay:
             self.page.overlay.append(self.file_picker)
-        self.page.dialog = self
-        self.open = True
-        self.page.update()
+        self.page.open(self)

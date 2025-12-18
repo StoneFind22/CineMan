@@ -5,6 +5,7 @@ from src.ui.components.dialogs import show_confirm_dialog, show_info_dialog
 from src.ui.views.admin.inventory_item_dialog import InventoryItemDialog
 from src.ui.views.admin.product_dialog import ProductDialog
 from src.ui.views.admin.inventory_import_dialog import InventoryImportDialog
+from src.ui.views.admin.recipes_view import RecipesView
 
 class InventoryView:
     """
@@ -23,6 +24,7 @@ class InventoryView:
         self.insumos_table = ft.DataTable(columns=[])
         self.products_table = ft.DataTable(columns=[])
         self.movements_table = ft.DataTable(columns=[])
+        self.recipes_view = None # Se inicializa en build
 
     def build(self):
         """
@@ -30,6 +32,7 @@ class InventoryView:
         Este método es llamado por MainScreen.
         """
         self._setup_tables()
+        self.recipes_view = RecipesView(self.page, self.inventory_service, self.theme)
         
         # Cargar todos los datos al construir la vista
         self.load_data()
@@ -48,8 +51,9 @@ class InventoryView:
                     selected_index=0,
                     animation_duration=300,
                     tabs=[
-                        ft.Tab(text="Insumos", content=self._build_insumos_tab()),
-                        ft.Tab(text="Productos y Recetas", content=self._build_products_tab()),
+                        ft.Tab(text="Insumos (Almacén)", content=self._build_insumos_tab()),
+                        ft.Tab(text="Catálogo Comercial", content=self._build_products_tab()),
+                        ft.Tab(text="Ingeniería de Menú", content=self.recipes_view),
                         ft.Tab(text="Movimientos de Stock", content=self._build_movements_tab()),
                     ],
                     expand=1,
@@ -127,11 +131,13 @@ class InventoryView:
             self.products_table.rows.append(ft.DataRow(cells=[ft.DataCell(ft.Text("No se encontraron productos.", text_align="center")), ft.DataCell(ft.Text("")), ft.DataCell(ft.Text("")), ft.DataCell(ft.Text("")), ft.DataCell(ft.Text(""))]))
         else:
             for product in self.products:
+                product_copy = product.copy()
                 self.products_table.rows.append(ft.DataRow(cells=[
                     ft.DataCell(ft.Text(product['name'])), ft.DataCell(ft.Text(product.get('category_name', 'N/A'))),
                     ft.DataCell(ft.Text(f"{product['price']:.2f}")), ft.DataCell(ft.Text(product['product_type'])),
                     ft.DataCell(ft.Row([
-                        ft.IconButton(icon=ft.Icons.EDIT, tooltip="Editar Receta"), ft.IconButton(icon=ft.Icons.DELETE, tooltip="Eliminar Producto"),
+                        ft.IconButton(icon=ft.Icons.EDIT, tooltip="Editar Producto", on_click=lambda e, p=product_copy: self.open_edit_product_dialog(p)),
+                        ft.IconButton(icon=ft.Icons.DELETE, tooltip="Eliminar Producto", on_click=lambda e, p=product_copy: self.delete_product(p)),
                     ]))
                 ]))
         if self.page: self.page.update()
@@ -174,6 +180,20 @@ class InventoryView:
     def open_create_product_dialog(self, e):
         dialog = ProductDialog(page=self.page, inventory_service=self.inventory_service, theme=self.theme, on_save=self.load_products_data)
         dialog.show()
+
+    def open_edit_product_dialog(self, product_data: dict):
+        dialog = ProductDialog(page=self.page, inventory_service=self.inventory_service, theme=self.theme, on_save=self.load_products_data, product_data=product_data)
+        dialog.show()
+
+    def delete_product(self, product_data: dict):
+        def on_confirm(e):
+            success = self.inventory_service.delete_product(product_data['id'])
+            if success:
+                show_info_dialog(self.page, "Éxito", "El producto se ha eliminado correctamente.")
+                self.load_products_data()
+            else:
+                show_info_dialog(self.page, "Error", "No se pudo eliminar el producto. Es posible que sea parte de un combo.")
+        show_confirm_dialog(self.page, "Confirmar Eliminación", f"¿Está seguro que desea eliminar el producto '{product_data['name']}'?", on_confirm)
 
     def open_import_dialog(self, e):
         dialog = InventoryImportDialog(inventory_service=self.inventory_service, theme=self.theme, on_complete=self.load_data)

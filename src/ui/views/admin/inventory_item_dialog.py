@@ -1,6 +1,7 @@
 import flet as ft
 from src.services.inventory_service import InventoryService
 from src.ui.theme import AppTheme
+from src.ui.components.dialogs import show_info_dialog
 
 class InventoryItemDialog(ft.AlertDialog):
     """
@@ -53,8 +54,7 @@ class InventoryItemDialog(ft.AlertDialog):
         self.actions_alignment = ft.MainAxisAlignment.END
 
     def close_dialog(self, e):
-        self.open = False
-        self.page.update()
+        self.page.close(self)
 
     def save_item(self, e):
         """
@@ -111,10 +111,10 @@ class InventoryItemDialog(ft.AlertDialog):
                 new_id = self.inventory_service.create_inventory_item(data)
                 if new_id:
                     success = True
-            # show_info_dialog aun no se a definido
+            
             if success:
                 self.on_save()  # Llama al callback para refrescar la tabla
-                self.close_dialog(e)
+                self.page.close(self)
                 show_info_dialog(self.page, "Éxito", "El insumo se ha guardado correctamente.")
             else:
                 # El error más común aquí sería un nombre duplicado
@@ -125,6 +125,4 @@ class InventoryItemDialog(ft.AlertDialog):
             print(ex)
 
     def show(self):
-        self.page.dialog = self
-        self.open = True
-        self.page.update()
+        self.page.open(self)
