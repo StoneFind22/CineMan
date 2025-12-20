@@ -5,6 +5,7 @@ from src.ui.components.dialogs import show_confirm_dialog, show_info_dialog
 from src.ui.views.admin.inventory_item_dialog import InventoryItemDialog
 from src.ui.views.admin.product_dialog import ProductDialog
 from src.ui.views.admin.inventory_import_dialog import InventoryImportDialog
+from src.ui.views.admin.stock_adjustment_dialog import StockAdjustmentDialog
 from src.ui.views.admin.recipes_view import RecipesView
 
 class InventoryView:
@@ -25,6 +26,10 @@ class InventoryView:
         self.products_table = ft.DataTable(columns=[])
         self.movements_table = ft.DataTable(columns=[])
         self.recipes_view = None # Se inicializa en build
+        
+        # Filtros de movimientos
+        self.filter_start_date = ft.TextField(label="Inicio (YYYY-MM-DD)", width=150, dense=True)
+        self.filter_end_date = ft.TextField(label="Fin (YYYY-MM-DD)", width=150, dense=True)
 
     def build(self):
         """
@@ -98,9 +103,21 @@ class InventoryView:
 
     def _build_movements_tab(self):
         return ft.Column([
-            ft.Row([ft.ElevatedButton("Filtrar", icon=ft.Icons.FILTER_LIST, disabled=True)]),
+            ft.Row([
+                self.filter_start_date,
+                self.filter_end_date,
+                ft.ElevatedButton("Filtrar", icon=ft.Icons.FILTER_LIST, on_click=lambda e: self.load_movements_data()),
+                ft.IconButton(icon=ft.Icons.CLEAR, tooltip="Limpiar Filtros", on_click=self.clear_filters)
+            ]),
             ft.Container(content=ft.ListView([self.movements_table], expand=True), expand=True),
         ], expand=True)
+
+    def clear_filters(self, e):
+        self.filter_start_date.value = ""
+        self.filter_end_date.value = ""
+        self.filter_start_date.update()
+        self.filter_end_date.update()
+        self.load_movements_data()
 
     # --- Métodos de carga de datos ---
     def load_data(self):
@@ -118,6 +135,7 @@ class InventoryView:
                     ft.DataCell(ft.Text(item['unit'])),
                     ft.DataCell(ft.Text(f"{item['reorder_point']:.2f}")),
                     ft.DataCell(ft.Row([
+                        ft.IconButton(icon=ft.Icons.EXPOSURE, tooltip="Ajustar Stock", on_click=lambda e, i=item_copy: self.open_adjustment_dialog(i)),
                         ft.IconButton(icon=ft.Icons.EDIT, tooltip="Editar", on_click=lambda e, i=item_copy: self.open_edit_dialog(i)),
                         ft.IconButton(icon=ft.Icons.DELETE, tooltip="Eliminar", on_click=lambda e, i=item_copy: self.delete_item(i)),
                     ]))
@@ -143,7 +161,10 @@ class InventoryView:
         if self.page: self.page.update()
 
     def load_movements_data(self):
-        movements = self.inventory_service.get_stock_movements()
+        start = self.filter_start_date.value if self.filter_start_date.value else None
+        end = self.filter_end_date.value if self.filter_end_date.value else None
+        
+        movements = self.inventory_service.get_stock_movements(start_date=start, end_date=end)
         self.movements_table.rows.clear()
         if not movements:
             self.movements_table.rows.append(ft.DataRow(cells=[ft.DataCell(ft.Text("No se encontraron movimientos.", text_align="center")), ft.DataCell(ft.Text("")), ft.DataCell(ft.Text("")), ft.DataCell(ft.Text("")), ft.DataCell(ft.Text("")), ft.DataCell(ft.Text(""))]))
@@ -161,6 +182,16 @@ class InventoryView:
     # --- Métodos de apertura de dialogos ---
     def open_create_dialog(self, e):
         dialog = InventoryItemDialog(page=self.page, inventory_service=self.inventory_service, theme=self.theme, on_save=self.load_data)
+        dialog.show()
+
+    def open_adjustment_dialog(self, item_data: dict):
+        dialog = StockAdjustmentDialog(
+            page=self.page, 
+            inventory_service=self.inventory_service, 
+            theme=self.theme, 
+            item_data=item_data, 
+            on_save=lambda: (self.load_data(), self.load_movements_data()) # Refrescar ambos
+        )
         dialog.show()
 
     def open_edit_dialog(self, item_data: dict):
