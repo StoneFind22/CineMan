@@ -90,6 +90,32 @@ class InventoryService:
             logger.exception("Error de BD al obtener las categorías de productos.")
             return []
 
+    def create_product_category(self, name: str) -> Dict[str, Any]:
+        """
+        Crea una categoría de forma segura.
+        Retorna: {'success': bool, 'id': int, 'message': str, 'name': str}
+        """
+        name_clean = name.strip().title()
+        
+        if not name_clean:
+            return {'success': False, 'message': "El nombre no puede estar vacío."}
+
+        # 1. Verificar duplicado exacto (Case Insensitive)
+        try:
+            existing = self.db.execute_query("SELECT id FROM product_categories WHERE name = ?", (name_clean,))
+            if existing:
+                return {'success': False, 'message': f"La categoría '{name_clean}' ya existe.", 'id': existing[0]['id']}
+
+            # 2. Crear
+            new_id = self.db.execute_insert("INSERT INTO product_categories (name) VALUES (?)", (name_clean,))
+            if new_id:
+                return {'success': True, 'id': new_id, 'message': "Categoría creada.", 'name': name_clean}
+            return {'success': False, 'message': "No se pudo insertar en BD."}
+        
+        except DatabaseError as e:
+            logger.exception(f"Error al crear categoría {name}")
+            return {'success': False, 'message': f"Error técnico: {e}"}
+
     def create_product(self, data: Dict[str, Any]) -> Optional[int]:
         try:
             query = "INSERT INTO products (name, description, price, category_id, product_type, track_stock, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)"
@@ -155,6 +181,62 @@ class InventoryService:
             return []
 
     # --- Métodos de Lógica de Stock y Auditoría ---
+    def validate_stock_availability(self, items_to_sell: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Verifica si hay suficiente stock para una lista de productos a vender.
+        Retorna un diccionario: {'valid': bool, 'errors': List[str]}
+        items_to_sell debe ser una lista de dicts con: {'product_id': int, 'quantity': int}
+        """
+        required_inventory = {}
+        errors = []
+
+        try:
+            for item in items_to_sell:
+                product_id = item['product_id']
+                qty_sell = item['quantity']
+                
+                # Obtener info básica del producto
+                prod_info = self.db.execute_query("SELECT name, track_stock FROM products WHERE id = ?", (product_id,))
+                if not prod_info: continue
+                name, track = prod_info[0]['name'], prod_info[0]['track_stock']
+
+                if not track: continue
+
+                # Obtener receta recursiva
+                self._accumulate_requirements(product_id, qty_sell, required_inventory)
+
+            # Verificar contra stock actual
+            for item_id, qty_needed in required_inventory.items():
+                stock_row = self.db.execute_query("SELECT name, current_stock FROM inventory_items WHERE id = ?", (item_id,))
+                if not stock_row: continue
+                item_name = stock_row[0]['name']
+                current_stock = float(stock_row[0]['current_stock'])
+                
+                if current_stock < qty_needed:
+                    errors.append(f"Insuficiente '{item_name}'. Requerido: {qty_needed:.2f}, Disponible: {current_stock:.2f}")
+
+            return {'valid': len(errors) == 0, 'errors': errors}
+
+        except DatabaseError as e:
+            logger.exception(f"Error al validar stock: {e}")
+            return {'valid': False, 'errors': ["Error interno al verificar inventario."]}
+
+    def _accumulate_requirements(self, product_id: int, quantity: float, requirements: Dict[int, float]):
+        """Auxiliar recursivo para sumarizar necesidades de insumos."""
+        recipe = self.get_recipe_for_product(product_id)
+        
+        # Si no tiene receta pero trackea stock, asumimos que NO consume insumos (quizás un error de config, o es un producto simple sin receta definida aún)
+        if not recipe: return 
+
+        for comp in recipe:
+            needed = comp['quantity'] * quantity
+            if comp['inventory_item_id']:
+                # Es un ingrediente base
+                requirements[comp['inventory_item_id']] = requirements.get(comp['inventory_item_id'], 0) + needed
+            elif comp['child_product_id']:
+                # Es un sub-producto
+                self._accumulate_requirements(comp['child_product_id'], needed, requirements)
+
     def deduct_stock_for_sale(self, sale_id: int, items_sold: List[Dict[str, Any]], user_id: int):
         """
         Deduce el stock para una venta, procesando las recetas de cada producto vendido.
